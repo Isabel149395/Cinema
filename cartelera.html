@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cineplanet — Cartelera</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow+Condensed:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #1a0a2e;
+      margin: 0;
+      padding: 0;
+      font-family: 'Barlow Condensed', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .screen {
+      width: 960px;
+      height: 580px;
+      background: #12082a;
+      color: #f5f0ff;
+      overflow: hidden;
+      position: relative;
+      border: 2px solid #6a00ff;
+      box-shadow:
+        0 0 40px #6a00ff55,
+        0 0 80px #ff006633,
+        inset 0 0 60px #0a001a;
+    }
+
+    /* ── TOP BAR ── */
+    .top-bar {
+      background: linear-gradient(90deg, #1a003a, #2d0060, #1a003a);
+      padding: 10px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #ff00aa;
+    }
+
+    .cinema-logo {
+      font-family: 'Oswald', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #ff00aa;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      text-shadow: 0 0 20px #ff00aa99;
+    }
+
+    .cinema-logo span { color: #ffffff; }
+
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .top-clock {
+      font-size: 16px;
+      color: #cc88ff;
+      letter-spacing: 3px;
+      font-weight: 600;
+    }
+
+    .top-date {
+      font-size: 12px;
+      color: #8844aa;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* ── SLIDE CONTAINER ── */
+    .slide-container {
+      position: relative;
+      width: 100%;
+      height: 516px;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      opacity: 0;
+      transition: opacity 0.9s ease;
+      pointer-events: none;
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ── MOVIE SLIDE ── */
+    .movie-poster-area {
+      width: 260px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .poster-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+    }
+
+    /* Overlay degradado sobre la imagen para que el texto sea legible */
+    .poster-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 55%, #08050f 98%);
+      pointer-events: none;
+    }
+
+    /* Color de fondo fallback si la imagen no carga */
+    .bg-transformers { background: linear-gradient(135deg, #001040, #002a80); }
+    .bg-it           { background: linear-gradient(135deg, #2a0008, #600020); }
+    .bg-titanic      { background: linear-gradient(135deg, #001828, #004060); }
+    .bg-hangover     { background: linear-gradient(135deg, #1a1800, #404000); }
+    .bg-michael      { background: linear-gradient(135deg, #422f01, #524a06); }
+    .bg-bts          { background: linear-gradient(135deg, #390142, #3a0060); }
+
+    .movie-info {
+      flex: 1;
+      padding: 22px 28px 16px 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: linear-gradient(180deg, #1a0a35 0%, #120828 100%);;
+    }
+
+    /* ── GENRE TAG ── */
+    .genre-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      padding: 4px 12px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      border-radius: 2px;
+    }
+
+    .tag-yellow  { background: #ffdd00; color: #1a1000; }
+    .tag-red     { background: #ff1044; color: #ffffff; }
+    .tag-blue    { background: #00aaff; color: #000a14; }
+    .tag-green   { background: #44ff44; color: #001400; }
+
+    /* ── MOVIE TITLE ── */
+    .movie-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 44px;
+      font-weight: 700;
+      line-height: 0.95;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+
+    .title-yellow { color: #ffdd00; text-shadow: 0 0 30px #ffdd0066; }
+    .title-red    { color: #ff4466; text-shadow: 0 0 30px #ff004466; }
+    .title-blue   { color: #44ccff; text-shadow: 0 0 30px #00aaffaa; }
+    .title-green  { color: #66ff44; text-shadow: 0 0 30px #44ff0066; }
+
+    .movie-meta {
+      font-size: 13px;
+      color: #8866aa;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    /* ── STARS ── */
+    .rating { display: flex; gap: 3px; margin-bottom: 10px; }
+    .star     { font-size: 16px; color: #ffdd00; }
+    .star.empty { color: #2a1a40; }
+
+    .movie-desc {
+      font-size: 15px;
+      color: #c0a8e0;
+      line-height: 1.5;
+      max-width: 420px;
+    }
+
+    /* ── SHOWTIMES ── */
+    .showtimes-label {
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .label-yellow { color: #ffdd00; }
+    .label-red    { color: #ff4466; }
+    .label-blue   { color: #44ccff; }
+    .label-green  { color: #66ff44; }
+
+    .showtimes-grid {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .showtime-chip {
+      background: #12083a;
+      border: 1px solid #3a1a60;
+      padding: 8px 16px;
+      text-align: center;
+      min-width: 90px;
+    }
+
+    .showtime-chip .time {
+      font-family: 'Oswald', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: #ffffff;
+      display: block;
+      line-height: 1;
+    }
+
+    .showtime-chip .sala {
+      font-size: 10px;
+      color: #6644aa;
+      letter-spacing: 1px;
+      margin-top: 3px;
+      display: block;
+      text-transform: uppercase;
+    }
+
+    .showtime-chip.sold {
+      opacity: 0.35;
+    }
+
+    .showtime-chip.few {
+      border-color: #ff00aa;
+      box-shadow: 0 0 8px #ff00aa44;
+    }
+
+    .few-label {
+      font-size: 10px;
+      color: #ff00aa;
+      letter-spacing: 1px;
+      margin-top: 3px;
+      display: block;
+      text-transform: uppercase;
+    }
+
+    /* ── NOW TAG ── */
+    .movie-now-tag {
+      position: absolute;
+      top: 14px;
+      left: 0;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      padding: 5px 16px;
+      text-transform: uppercase;
+      z-index: 5;
+    }
+
+    .tag-now-yellow { background: #ffdd00; color: #1a1000; }
+    .tag-now-red    { background: #ff1044; color: #ffffff; }
+    .tag-now-blue   { background: #00aaff; color: #000a14; }
+    .tag-now-green  { background: #44ff44; color: #001400; }
+
+    /* ── PRICES SLIDE ── */
+    .prices-slide {
+      flex-direction: column;
+      padding: 28px 40px;
+      background: linear-gradient(135deg, #080518, #100a28, #080518);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .prices-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 34px;
+      font-weight: 700;
+      color: #ff00aa;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      text-align: center;
+      text-shadow: 0 0 30px #ff00aa88;
+      margin-bottom: 4px;
+    }
+
+    .prices-subtitle {
+      text-align: center;
+      font-size: 13px;
+      color: #6633aa;
+      letter-spacing: 3px;
+      margin-bottom: 28px;
+      text-transform: uppercase;
+    }
+
+    .prices-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      max-width: 680px;
+      width: 100%;
+    }
+
+    .price-card {
+      background: #0d0828;
+      border: 1px solid #3a1a60;
+      padding: 18px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .price-card.span2 { grid-column: span 2; }
+
+    .price-card.feat-imax   { border-color: #ffdd00; box-shadow: 0 0 14px #ffdd0033; }
+    .price-card.feat-disc   { border-color: #44ff44; box-shadow: 0 0 14px #44ff0033; }
+
+    .price-type {
+      font-family: 'Oswald', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .price-desc {
+      font-size: 12px;
+      color: #5a3a80;
+      letter-spacing: 1px;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+
+    .price-amount {
+      font-family: 'Oswald', sans-serif;
+      font-size: 36px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .price-amount .currency {
+      font-size: 14px;
+      vertical-align: super;
+      opacity: 0.7;
+    }
+
+    .col-white  { color: #ffffff; }
+    .col-pink   { color: #ff44aa; }
+    .col-yellow { color: #ffdd00; text-shadow: 0 0 16px #ffdd0077; }
+    .col-green  { color: #44ff44; text-shadow: 0 0 16px #44ff0077; }
+    .col-blue   { color: #44ccff; }
+
+    .price-note {
+      text-align: center;
+      font-size: 12px;
+      color: #4a2a60;
+      letter-spacing: 1px;
+      margin-top: 22px;
+      text-transform: uppercase;
+    }
+
+    /* ── DOTS NAV ── */
+    .slide-nav {
+      position: absolute;
+      bottom: 44px;
+      right: 20px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      background: #2a1a40;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+
+    .dot.active {
+      background: #ff00aa;
+      box-shadow: 0 0 8px #ff00aa;
+    }
+
+    /* ── SLIDE COUNTER ── */
+    .slide-counter {
+      position: absolute;
+      top: 14px;
+      right: 18px;
+      font-size: 12px;
+      color: #ab83c6;
+      letter-spacing: 2px;
+      z-index: 5;
+    }
+
+    /* ── TICKER ── */
+    .ticker-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(90deg, #6a00ff, #ff00aa, #6a00ff);
+      padding: 6px 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .ticker-inner {
+      display: inline-block;
+      animation: ticker 28s linear infinite;
+      font-family: 'Oswald', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    @keyframes ticker {
+      from { transform: translateX(100vw); }
+      to   { transform: translateX(-100%); }
+    }
+
+    /* ── PROGRESS BAR ── */
+    .progress-bar {
+      position: absolute;
+      bottom: 30px;
+      left: 0;
+      height: 2px;
+      background: #ff00aa;
+      box-shadow: 0 0 8px #ff00aa;
+      width: 0%;
+      transition: width 0.1s linear;
+      z-index: 8;
+    }
+
+    /* ── SCANLINES effect ── */
+    .scanlines {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.06) 2px,
+        rgba(0,0,0,0.06) 4px
+      );
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+<div class="screen">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="cinema-logo">SilverSnake<span>Cinema</span></div>
+    <div class="top-right">
+      <div class="top-date" id="dateDisplay">SAB 03 MAY</div>
+      <div class="top-clock" id="clock">00:00:00</div>
+    </div>
+  </div>
+
+  <!-- SLIDES -->
+  <div class="slide-container">
+
+    <!-- ══════════════════════════════════════
+         SLIDE 1 — TRANSFORMERS ONE
+         Imagen: galeria/transformers.png
+    ══════════════════════════════════════ -->
+    <div class="slide active" id="slide-0" style="display:flex;">
+      <div class="movie-poster-area bg-transformers">
+        <!-- IMAGEN: reemplaza 'galeria/transformers.png' con tu imagen -->
+        <img class="poster-img" src="galeria/transformers.jpg" alt="Transformers One"
+             onerror="this.style.display='none'"/>
+        <div class="poster-overlay"></div>
+        <div class="movie-now-tag tag-now-yellow">En cartelera</div>
+      </div>
+      <div class="movie-info">
+        <div>
+          <div class="genre-tag tag-yellow">Acción · Sci-Fi · Animación</div>
+          <div class="movie-title title-yellow">Transformers<br>One</div>
+          <div class="movie-meta">2024 &nbsp;·&nbsp; 1h 44min &nbsp;·&nbsp; Todo público</div>
+          <div class="rating">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span>
+            <span class="star">★</span><span class="star empty">★</span>
+          </div>
+          <div class="movie-desc">
+            El origen jamás contado de Optimus Prime y Megatron — dos robots que eran mejores
+            amigos y se convirtieron en los más grandes rivales de la historia.
+          </div>
+        </div>
+        <div>
+          <div class="showtimes-label label-yellow">Horarios de hoy</div>
+          <div class="showtimes-grid">
+            <div class="showtime-chip">
+              <span class="time">2:00</span>
+              <span class="sala">Sala 3 · 2D</span>
+            </div>
+            <div class="showtime-chip few">
+              <span class="time">5:00</span>
+              <span class="sala">Sala 1 · 2D</span>
+              <span class="few-label">Últimas</span>
+            </div>
+            <div class="showtime-chip">
+              <span class="time">7:30</span>
+              <span class="sala">Sala 5 · 3D</span>
+            </div>
+            <div class="showtime-chip sold">
+              <span class="time">10:00</span>
+              <span class="sala">Agotado</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SLIDE 2 — IT CHAPTER 2
+         Imagen: galeria/it.png
+    ══════════════════════════════════════ -->
+    <div class="slide" id="slide-1" style="display:flex;">
+      <div class="movie-poster-area bg-it">
+        <img class="poster-img" src="galeria/it2.jpg" alt="It Capítulo 2"
+             onerror="this.style.display='none'"/>
+        <div class="poster-overlay"></div>
+        <div class="movie-now-tag tag-now-red">Terror</div>
+      </div>
+      <div class="movie-info">
+        <div>
+          <div class="genre-tag tag-red">Terror · Misterio · Drama</div>
+          <div class="movie-title title-red">It:<br>Capítulo 2</div>
+          <div class="movie-meta">2019 &nbsp;·&nbsp; 2h 50min &nbsp;·&nbsp; Mayores de 18</div>
+          <div class="rating">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span>
+            <span class="star">★</span><span class="star empty">★</span>
+          </div>
+          <div class="movie-desc">
+            27 años después, Pennywise regresa. El Club de los Perdedores debe enfrentar
+            sus peores miedos una vez más para destruir al payaso definitivamente.
+          </div>
+        </div>
+        <div>
+          <div class="showtimes-label label-red">Horarios de hoy</div>
+          <div class="showtimes-grid">
+            <div class="showtime-chip">
+              <span class="time">3:30</span>
+              <span class="sala">Sala 2 · 2D</span>
+            </div>
+            <div class="showtime-chip">
+              <span class="time">5:30</span>
+              <span class="sala">Sala 4 · 2D</span>
+            </div>
+            <div class="showtime-chip few">
+              <span class="time">8:00</span>
+              <span class="sala">Sala 6 · 3D</span>
+              <span class="few-label">Últimas</span>
+            </div>
+            <div class="showtime-chip">
+              <span class="time">10:30</span>
+              <span class="sala">Sala 2 · 2D</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SLIDE 3 — TITANIC
+         Imagen: galeria/titanic.png
+    ══════════════════════════════════════ -->
+    <div class="slide" id="slide-2" style="display:flex;">
+      <div class="movie-poster-area bg-titanic">
+        <img class="poster-img" src="galeria/titanic.jpg" alt="Titanic"
+             onerror="this.style.display='none'"/>
+        <div class="poster-overlay"></div>
+        <div class="movie-now-tag tag-now-blue">Clásico</div>
+      </div>
+      <div class="movie-info">
+        <div>
+          <div class="genre-tag tag-blue">Romance · Drama · Historia</div>
+          <div class="movie-title title-blue">Titanic</div>
+          <div class="movie-meta">1997 &nbsp;·&nbsp; 3h 14min &nbsp;·&nbsp; Mayores de 13</div>
+          <div class="rating">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span>
+            <span class="star">★</span><span class="star">★</span>
+          </div>
+          <div class="movie-desc">
+            Jack y Rose se enamoran a bordo del barco más famoso de la historia.
+            Una historia de amor que desafía la clase social y al destino mismo.
+          </div>
+        </div>
+        <div>
+          <div class="showtimes-label label-blue">Horarios de hoy</div>
+          <div class="showtimes-grid">
+            <div class="showtime-chip">
+              <span class="time">1:00</span>
+              <span class="sala">Sala 1 · 2D</span>
+            </div>
+            <div class="showtime-chip sold">
+              <span class="time">5:00</span>
+              <span class="sala">Agotado</span>
+            </div>
+            <div class="showtime-chip few">
+              <span class="time">8:15</span>
+              <span class="sala">Sala 3 · 2D</span>
+              <span class="few-label">2 Butacas</span>
+            </div>
+            <div class="showtime-chip">
+              <span class="time">10:00</span>
+              <span class="sala">Sala 7 · IMAX</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SLIDE 4 — THE HANGOVER PART II
+         Imagen: galeria/hangover.png
+    ══════════════════════════════════════ -->
+    <div class="slide" id="slide-3" style="display:flex;">
+      <div class="movie-poster-area bg-hangover">
+        <img class="poster-img" src="galeria/qpayer.jpg" alt="The Hangover Part II"
+             onerror="this.style.display='none'"/>
+        <div class="poster-overlay"></div>
+        <div class="movie-now-tag tag-now-green">Comedia</div>
+      </div>
+      <div class="movie-info">
+        <div>
+          <div class="genre-tag tag-green">Comedia · Aventura</div>
+          <div class="movie-title title-green">The Hangover<br>Part II</div>
+          <div class="movie-meta">2011 &nbsp;·&nbsp; 1h 42min &nbsp;·&nbsp; Mayores de 18</div>
+          <div class="rating">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span>
+            <span class="star empty">★</span><span class="star empty">★</span>
+          </div>
+          <div class="movie-desc">
+            El Wolfpack está de regreso, esta vez en Bangkok para la boda de Stu.
+            Pero lo que pasa en Bangkok... lo complica todo.
+          </div>
+        </div>
+        <div>
+          <div class="showtimes-label label-green">Horarios de hoy</div>
+          <div class="showtimes-grid">
+            <div class="showtime-chip">
+              <span class="time">4:00</span>
+              <span class="sala">Sala 5 · 2D</span>
+            </div>
+            <div class="showtime-chip">
+              <span class="time">6:15</span>
+              <span class="sala">Sala 2 · 2D</span>
+            </div>
+            <div class="showtime-chip">
+              <span class="time">8:30</span>
+              <span class="sala">Sala 7 · Fila 7</span>
+            </div>
+            <div class="showtime-chip few">
+              <span class="time">10:45</span>
+              <span class="sala">Sala 3 · 2D</span>
+              <span class="few-label">Últimas</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+        SLIDE 5 — MICHAEL
+        Imagen: galeria/michael.jpg
+    ══════════════════════════════════════ -->
+    <div class="slide" id="slide-4" style="display:flex;">
+      <div class="movie-poster-area bg-michael">
+        <img class="poster-img" src="galeria/michael.jpg" alt="Michael"
+            onerror="this.style.display='none'"/>
+        <div class="poster-overlay"></div>
+        <div class="movie-now-tag" style="background:#ffffff; color:#000000;">Biopic</div>
+      </div>
+      <div class="movie-info">
+        <div>
+          <div class="genre-tag" style="background:#ffffff; color:#000000;">Drama · Música · Biopic</div>
+          <div class="movie-title" style="color:#ffffff; text-shadow: 0 0 30px #ffffff66;">Michael</div>
+          <div class="movie-meta">2026 &nbsp;·&nbsp; 2h 20min &nbsp;·&nbsp; Mayores de 13</div>
+          <div class="rating">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span>
+            <span class="star">★</span><span class="star">★</span>
+          </div>
+          <div class="movie-desc">
+            La historia del Rey del Pop — su talento, su ascenso y las sombras que
+            marcaron la vida del artista más icónico de todos los tiempos.
+          </div>
+        </div>
+        <div>
+          <div class="showtimes-label" style="color:#ffffff;">Horarios de hoy</div>
+          <div class="showtimes-grid">
+            <div class="showtime-chip">
+              <span class="time">2:30</span>
+              <span class="sala">Sala 1 · 2D</span>
+            </div>
+            <div class="showtime-chip few">
+              <span class="time">5:00</span>
+              <span class="sala">Sala 3 · 2D</span>
+              <span class="few-label">Últimas</span>
+            </div>
+            <div class="showtime-chip">
+              <span class="time">7:45</span>
+              <span class="sala">Sala 6 · 2D</span>
+            </div>
+            <div class="showtime-chip sold">
+              <span class="time">10:15</span>
+              <span class="sala">Agotado</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+        SLIDE 6 — BTS WORLD TOUR 'ARIRANG
+        Imagen: galeria/bts.jpg
+    ══════════════════════════════════════ -->
+    <div class="slide" id="slide-5" style="display:flex;">
+      <div class="movie-poster-area bg-bts">
+        <img class="poster-img" src="galeria/bts.jpg" alt="BTS WORLD TOUR 'ARIRANG'"
+            onerror="this.style.display='none'"/>
+        <div class="poster-overlay"></div>
+        <div class="movie-now-tag" style="background:#9b59b6; color:#ffffff;">Concierto</div>
+      </div>
+      <div class="movie-info">
+        <div>
+          <div class="genre-tag" style="background:#9b59b6; color:#ffffff;">Concierto · K-Pop · Evento especial</div>
+          <div class="movie-title" style="color:#c39bd3; text-shadow: 0 0 30px #9b59b666;">BTS:<br>ARIRANG</div>
+          <div class="movie-meta">Goyang, Corea · 2026 &nbsp;·&nbsp; 2h 37min &nbsp;·&nbsp; Todo público</div>
+          <div class="rating">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span>
+            <span class="star">★</span><span class="star">★</span>
+          </div>
+          <div class="movie-desc">
+            El concierto del regreso de BTS — transmitido en cines de todo el mundo.
+            Una celebración épica por el regreso de BTS después de 2 años del Servicio Militar.
+          </div>
+        </div>
+        <div>
+          <div class="showtimes-label" style="color:#c39bd3;">Horarios de hoy</div>
+          <div class="showtimes-grid">
+            <div class="showtime-chip">
+              <span class="time">3:00</span>
+              <span class="sala">Sala 4 · 2D</span>
+            </div>
+            <div class="showtime-chip few">
+              <span class="time">6:00</span>
+              <span class="sala">Sala 2 · 2D</span>
+              <span class="few-label">Últimas</span>
+            </div>
+            <div class="showtime-chip sold">
+              <span class="time">8:30</span>
+              <span class="sala">Agotado</span>
+            </div>
+            <div class="showtime-chip">
+              <span class="time">10:00</span>
+              <span class="sala">Sala 5 · IMAX</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SLIDE 7 — PRECIOS DE ENTRADAS
+    ══════════════════════════════════════ -->
+    <div class="slide prices-slide" id="slide-6" style="display:flex;">
+      <div class="prices-title">Precios de Entradas</div>
+      <div class="prices-subtitle">Tarifa general · 2025</div>
+      <div class="prices-grid">
+
+        <div class="price-card">
+          <div>
+            <div class="price-type col-white">2D General</div>
+            <div class="price-desc">Sala estándar</div>
+          </div>
+          <div class="price-amount col-pink">
+            <span class="currency">S/</span>25
+          </div>
+        </div>
+
+        <div class="price-card">
+          <div>
+            <div class="price-type col-white">3D General</div>
+            <div class="price-desc">Incluye lentes 3D</div>
+          </div>
+          <div class="price-amount col-pink">
+            <span class="currency">S/</span>30
+          </div>
+        </div>
+
+        <div class="price-card span2 feat-imax">
+          <div>
+            <div class="price-type col-yellow">Sala Extrema / IMAX</div>
+            <div class="price-desc">Dolby Atmos · Pantalla gigante · Butacas premium</div>
+          </div>
+          <div class="price-amount col-yellow">
+            <span class="currency">S/</span>40
+          </div>
+        </div>
+
+        <div class="price-card span2 feat-disc">
+          <div>
+            <div class="price-type col-green">Discapacidad / Tarjeta OH!</div>
+            <div class="price-desc">Presentar documento válido · Incluye 1 acompañante</div>
+          </div>
+          <div class="price-amount col-green">
+            <span class="currency">S/</span>15
+          </div>
+        </div>
+
+      </div>
+      <div class="price-note">⚠ Precios pueden variar en fechas especiales · Sujeto a disponibilidad</div>
+    </div>
+
+    <!-- DOTS -->
+    <div class="slide-nav">
+      <div class="dot active" onclick="goToSlide(0)"></div>
+      <div class="dot" onclick="goToSlide(1)"></div>
+      <div class="dot" onclick="goToSlide(2)"></div>
+      <div class="dot" onclick="goToSlide(3)"></div>
+      <div class="dot" onclick="goToSlide(4)"></div>
+      <div class="dot" onclick="goToSlide(5)"></div>
+      <div class="dot" onclick="goToSlide(6)"></div>
+    </div>
+
+    <!-- COUNTER -->
+    <div class="slide-counter" id="counter">1 / 7</div>
+
+    <!-- PROGRESS BAR -->
+    <div class="progress-bar" id="progressBar"></div>
+
+    <!-- TICKER -->
+    <div class="ticker-bar">
+      <span class="ticker-inner">
+        &nbsp;&nbsp;&nbsp;&nbsp;SilverSnakeCinema&nbsp;·&nbsp; BIENVENIDOS &nbsp;·&nbsp;
+        DISFRUTEN LA FUNCIÓN &nbsp;·&nbsp; PROHIBIDO FUMAR &nbsp;·&nbsp;
+        APAGAR CELULARES &nbsp;·&nbsp; RESPETE A LOS DEMÁS ESPECTADORES &nbsp;·&nbsp;
+        SNACKS EN DULCERÍA &nbsp;·&nbsp; ENJOY THE SHOW &nbsp;·&nbsp;
+        SilverSnakeCinema &nbsp;·&nbsp;
+      </span>
+    </div>
+
+    <!-- SCANLINES -->
+    <div class="scanlines"></div>
+
+  </div><!-- /slide-container -->
+</div><!-- /screen -->
+
+<script>
+  /* ─── CARRUSEL ─── */
+  const TOTAL = 7;
+  const INTERVAL = 7000; // ms por slide
+  let current = 0;
+  let elapsed = 0;
+  let ticker;
+
+  function goToSlide(n) {
+    document.getElementById('slide-' + current).classList.remove('active');
+    document.querySelectorAll('.dot')[current].classList.remove('active');
+    current = n;
+    document.getElementById('slide-' + current).classList.add('active');
+    document.querySelectorAll('.dot')[current].classList.add('active');
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + TOTAL;
+    elapsed = 0;
+    document.getElementById('progressBar').style.width = '0%';
+    clearInterval(ticker);
+    startTicker();
+  }
+
+  function startTicker() {
+    ticker = setInterval(() => {
+      elapsed += 100;
+      const pct = Math.min((elapsed / INTERVAL) * 100, 100);
+      document.getElementById('progressBar').style.width = pct + '%';
+      if (elapsed >= INTERVAL) {
+        goToSlide((current + 1) % TOTAL);
+      }
+    }, 100);
+  }
+
+  startTicker();
+
+  /* ─── RELOJ ─── */
+  const DAYS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SAB'];
+  const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+
+  function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clock').textContent = h + ':' + m + ':' + s;
+    const d = DAYS[now.getDay()];
+    const day = String(now.getDate()).padStart(2,'0');
+    const mon = MONTHS[now.getMonth()];
+    document.getElementById('dateDisplay').textContent = d + ' ' + day + ' ' + mon;
+  }
+
+  updateClock();
+  setInterval(updateClock, 1000);
+</script>
+</body>
+</html>
